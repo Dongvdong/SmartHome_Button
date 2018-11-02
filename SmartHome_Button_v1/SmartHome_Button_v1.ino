@@ -177,6 +177,12 @@ String mqtt_mytopic_r= String()+ "lovelamp/love_00001_x/"+"r";
 #define LED1         D0                                   // (Do not Change)
 #define LED2         D1                                   // (Do not Change)
 #define LED3         D5                                   // (Do not Change)
+
+bool sendStatus1 = false;
+bool sendStatus2 = false;                                    // (Do not Change)
+bool sendStatus3 = false;
+
+
 //-----------------------------A-2 变量声明开始-----------------//
 int PIN_Led = D4;
 int PIN_Led_light = 0; 
@@ -279,22 +285,23 @@ void lowInterrupt(){
 
 void Interrupt_button1(){
   
-    digitalWrite(LED1, !digitalRead(LED1));
-  
+      digitalWrite(LED1, !digitalRead(LED1));
+      sendStatus1 =true ;
   }
 void Interrupt_button2(){
   
     digitalWrite(LED2, !digitalRead(LED2));
-  
+       sendStatus2 =true ;
   }
 
-  void home_led_button_int();
+
+
 void Interrupt_button3(){
-  
     digitalWrite(LED3, !digitalRead(LED3));
-  
+      sendStatus3 =true ;
   }
-
+  
+void home_led_button_int();
   /*************************** 2-2 按键LED函数初始化（）*****************************/ 
 void Button_Int(){
   pinMode(PIN_Led_Key, INPUT);
@@ -1169,6 +1176,55 @@ void mqtt_reconnect() {//等待，直到连接上服务器
   }
 }
 
+void Button_parse(String topic,String string_msg){
+   String   mqtt_mytopic_key1= String()+ String(config_wifi.mqtt_topic)+"/key1";
+   String   mqtt_mytopic_key2= String()+ String(config_wifi.mqtt_topic)+"/key2";
+   String   mqtt_mytopic_key3= String()+ String(config_wifi.mqtt_topic)+"/key3";   
+    
+  if (topic == mqtt_mytopic_key1) {
+    if (string_msg == "stat") {
+       sendStatus1 = true;
+    } else if (string_msg == "on") {
+      digitalWrite(LED1, HIGH);
+      sendStatus1 = true;
+    } else if (string_msg == "off") {
+      digitalWrite(LED1, LOW);
+      sendStatus1 = true;
+    } else if (string_msg == "reset") {
+     // requestRestart = true;
+    }
+  }
+  
+
+else if (topic== mqtt_mytopic_key2) {
+    if (string_msg == "stat") {
+       sendStatus2 = true;
+    } else if (string_msg == "on") {
+      digitalWrite(LED2, HIGH);
+      sendStatus2 = true;
+    } else if (string_msg == "off") {
+      digitalWrite(LED2, LOW);
+      sendStatus2 = true;
+    } else if (string_msg == "reset") {
+     // requestRestart = true;
+    }
+  }
+
+else if (topic == mqtt_mytopic_key3) {
+    if (string_msg == "stat") {
+       sendStatus3 = true;
+    } else if (string_msg == "on") {
+      digitalWrite(LED3, HIGH);
+      sendStatus3 = true;
+    } else if (string_msg == "off") {
+      digitalWrite(LED3, LOW);
+      sendStatus3 = true;
+    } else if (string_msg == "reset") {
+     // requestRestart = true;
+    }
+  }
+  
+  }
 /* 3 接收数据处理， 服务器回掉函数*/
 void callback(char* topic, byte* payload, unsigned int length) {//用于接收数据
    //-----------------1数据解析-----------------------------//
@@ -1187,54 +1243,8 @@ void callback(char* topic, byte* payload, unsigned int length) {//用于接收�
   Use_Serial.println(string_msg);
   
   //parseData(string_msg);
+ Button_parse(String(topic), string_msg);
 
-
-   String   mqtt_mytopic_key1= String()+ String(config_wifi.mqtt_topic)+"/key1";
-   String   mqtt_mytopic_key2= String()+ String(config_wifi.mqtt_topic)+"/key2";
-   String   mqtt_mytopic_key3= String()+ String(config_wifi.mqtt_topic)+"/key3";   
-    
-  if (String(topic) == mqtt_mytopic_key1) {
-    if (string_msg == "stat") {
-       //sendStatus1 = true;
-    } else if (string_msg == "on") {
-      digitalWrite(D4, HIGH);
-     // sendStatus1 = true;
-    } else if (string_msg == "off") {
-      digitalWrite(D4, LOW);
-     // sendStatus1 = true;
-    } else if (string_msg == "reset") {
-     // requestRestart = true;
-    }
-  }
-
-else if (String(topic) == mqtt_mytopic_key2) {
-    if (string_msg == "stat") {
-       //sendStatus1 = true;
-    } else if (string_msg == "on") {
-      digitalWrite(D4, HIGH);
-     // sendStatus1 = true;
-    } else if (string_msg == "off") {
-      digitalWrite(D4, LOW);
-     // sendStatus1 = true;
-    } else if (string_msg == "reset") {
-     // requestRestart = true;
-    }
-  }
-
-else if (String(topic) == mqtt_mytopic_key3) {
-    if (string_msg == "stat") {
-       //sendStatus1 = true;
-    } else if (string_msg == "on") {
-      digitalWrite(D4, HIGH);
-     // sendStatus1 = true;
-    } else if (string_msg == "off") {
-      digitalWrite(D4, LOW);
-     // sendStatus1 = true;
-    } else if (string_msg == "reset") {
-     // requestRestart = true;
-    }
-  }
-  
  
 }
 
@@ -1295,6 +1305,64 @@ void mqtt_int(){
    client.setCallback(callback);
   }
 
+void checkStatus() {
+  //------------------------1号灯-----------------------------
+  if (sendStatus1) {  
+   if(digitalRead(LED1) == LOW)  {
+    
+   String   mqtt_mytopic_key1_stat= String()+ String(config_wifi.mqtt_topic)+"/key1/stat";   
+  if (client.connected())  client.publish(mqtt_mytopic_key1_stat.c_str(),"off");//接收外来的数据时的intopic        
+   Serial.println("LED 1 . . . . . . . . . . . . . . . . . . OFF");
+    } else {
+     String   mqtt_mytopic_key1_stat= String()+ String(config_wifi.mqtt_topic)+"/key1/stat";   
+     if (client.connected()) client.publish(mqtt_mytopic_key1_stat.c_str(),"on");//接收外来的数据时的intopic    
+     Serial.println("Relay 1 . . . . . . . . . . . . . . . . . . ON");
+    }
+    sendStatus1 = false;
+   
+  Serial.println("LED 1 . . . . . . . . . . . . . . . . . . ON");
+    
+    }
+   
+
+ if (sendStatus2) {  
+   if(digitalRead(LED2) == LOW)  {
+   String   mqtt_mytopic_key2_stat= String()+ String(config_wifi.mqtt_topic)+"/key2/stat";   
+  if (client.connected())  client.publish(mqtt_mytopic_key2_stat.c_str(),"off");//接收外来的数据时的intopic        
+     Serial.println("LED 2 . . . . . . . . . . . . . . . . . . OFF");
+    } else {
+
+     String   mqtt_mytopic_key2_stat= String()+ String(config_wifi.mqtt_topic)+"/key2/stat";   
+    if (client.connected())  client.publish(mqtt_mytopic_key2_stat.c_str(),"on");//接收外来的数据时的intopic    
+      Serial.println("Relay 2 . . . . . . . . . . . . . . . . . . ON");
+    }
+    sendStatus2 = false;
+    
+  Serial.println("LED 2 . . . . . . . . . . . . . . . . . . ON");
+    
+    }
+
+    if (sendStatus3) {  
+   if(digitalRead(LED3) == LOW)  {
+   String   mqtt_mytopic_key3_stat= String()+ String(config_wifi.mqtt_topic)+"/key3/stat";   
+    if (client.connected())  client.publish(mqtt_mytopic_key3_stat.c_str(),"off");//接收外来的数据时的intopic        
+     Serial.println("LED 3 . . . . . . . . . . . . . . . . . . OFF");
+    } else {
+
+     String   mqtt_mytopic_key3_stat= String()+ String(config_wifi.mqtt_topic)+"/key3/stat";   
+     if (client.connected()) client.publish(mqtt_mytopic_key3_stat.c_str(),"on");//接收外来的数据时的intopic    
+      Serial.println("Relay 3 . . . . . . . . . . . . . . . . . . ON");
+    }
+    sendStatus3 = false;
+   
+  Serial.println("LED 3 . . . . . . . . . . . . . . . . . . ON");
+    
+    }
+  
+  
+  }
+
+
   
 void setup() {
     Use_Serial.begin(115200); //串口初始化
@@ -1326,14 +1394,14 @@ void loop()
 
      mqtt_reconnect();//确保连上服务器，否则一直等待。
      client.loop();//MUC接收数据的主循环函数。 
-     
+     checkStatus();
                      }
    else {
        //WIFI断开，重新连接WIFI             
          if(workmode==0)
                   {wifi_Init();   }      
          else if(workmode==1){                    
-                  http_wait();
+                   http_wait();
                       }
    }         
     
