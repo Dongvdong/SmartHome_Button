@@ -170,6 +170,13 @@ String mqtt_mytopic_r= String()+ "lovelamp/love_00001_x/"+"r";
 #define Use_Serial Serial
 #define smartLED D4 
 
+
+#define BUTTON1         D8                                   // (Do not Change)
+#define BUTTON2         D7                                   // (Do not Change)
+#define BUTTON3         D6                                   // (Do not Change)
+#define LED1         D0                                   // (Do not Change)
+#define LED2         D1                                   // (Do not Change)
+#define LED3         D5                                   // (Do not Change)
 //-----------------------------A-2 变量声明开始-----------------//
 int PIN_Led = D4;
 int PIN_Led_light = 0; 
@@ -270,13 +277,50 @@ void lowInterrupt(){
   }
 
 
+void Interrupt_button1(){
+  
+    digitalWrite(LED1, !digitalRead(LED1));
+  
+  }
+void Interrupt_button2(){
+  
+    digitalWrite(LED2, !digitalRead(LED2));
+  
+  }
 
+  void home_led_button_int();
+void Interrupt_button3(){
+  
+    digitalWrite(LED3, !digitalRead(LED3));
+  
+  }
 
   /*************************** 2-2 按键LED函数初始化（）*****************************/ 
 void Button_Int(){
- pinMode(PIN_Led_Key, INPUT);
- attachInterrupt(PIN_Led_Key, highInterrupt, RISING);
+  pinMode(PIN_Led_Key, INPUT);
+  attachInterrupt(PIN_Led_Key, highInterrupt, RISING);
+  home_led_button_int();
+ 
+ 
   }
+
+  void home_led_button_int(){
+    
+  pinMode(LED1, OUTPUT);
+  pinMode(LED2, OUTPUT);
+  pinMode(LED3, OUTPUT);
+  digitalWrite(LED1, LOW);
+  digitalWrite(LED2, LOW);
+  digitalWrite(LED3, LOW);
+  
+ pinMode(BUTTON1, INPUT);
+ attachInterrupt(BUTTON1, Interrupt_button1, RISING);
+ pinMode(BUTTON2, INPUT);
+ attachInterrupt(BUTTON2, Interrupt_button2, RISING);
+ pinMode(BUTTON3, INPUT);
+ attachInterrupt(BUTTON3, Interrupt_button3, RISING);
+    
+    }
 
 
 
@@ -1141,7 +1185,8 @@ void callback(char* topic, byte* payload, unsigned int length) {//用于接收�
   String string_msg=String(char_msg);  
   
   Use_Serial.println(string_msg);
-//parseData(string_msg);
+  
+  //parseData(string_msg);
 
 
    String   mqtt_mytopic_key1= String()+ String(config_wifi.mqtt_topic)+"/key1";
@@ -1161,8 +1206,39 @@ void callback(char* topic, byte* payload, unsigned int length) {//用于接收�
      // requestRestart = true;
     }
   }
+
+else if (String(topic) == mqtt_mytopic_key2) {
+    if (string_msg == "stat") {
+       //sendStatus1 = true;
+    } else if (string_msg == "on") {
+      digitalWrite(D4, HIGH);
+     // sendStatus1 = true;
+    } else if (string_msg == "off") {
+      digitalWrite(D4, LOW);
+     // sendStatus1 = true;
+    } else if (string_msg == "reset") {
+     // requestRestart = true;
+    }
+  }
+
+else if (String(topic) == mqtt_mytopic_key3) {
+    if (string_msg == "stat") {
+       //sendStatus1 = true;
+    } else if (string_msg == "on") {
+      digitalWrite(D4, HIGH);
+     // sendStatus1 = true;
+    } else if (string_msg == "off") {
+      digitalWrite(D4, LOW);
+     // sendStatus1 = true;
+    } else if (string_msg == "reset") {
+     // requestRestart = true;
+    }
+  }
+  
  
 }
+
+
 
  
 /*************************** 4 服务器函数配置*****************************/
